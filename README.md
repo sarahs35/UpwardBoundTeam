@@ -12,10 +12,11 @@
 ## Start screen: 
 <img width="995" height="510" alt="image" src="https://github.com/user-attachments/assets/d71f70e3-0243-41f7-9ec8-92414bcd29e9" />
 ## Game over screen: 
-<img width="1002" height="511" alt="image" src="https://github.com/user-attachments/assets/1625ae54-bbcf-4454-a523-30ee40531248" />
+<img width="939" height="509" alt="image" src="https://github.com/user-attachments/assets/b65b387b-aacc-4833-82ef-5d2f5d09ca84" />
 
 ## Game Play screen:
-<img src="blob:chrome-untrusted://media-app/ab49af35-5ae4-4b8c-9fd8-56632c7cfe0d" alt="Screenshot 2025-07-17 10.20.22 AM.png"/><img width="999" height="505" alt="image" src="https://github.com/user-attachments/assets/86a4fcec-b24f-49ad-97be-0c4c4a40a23f" />
+<img width="998" height="502" alt="image" src="https://github.com/user-attachments/assets/d9914e06-0517-4b61-83f0-4d496c84cac3" />
+
 
 ## Credits: We got inspiration from other online soccer games.
 ## What you learned and what you are most proud of: Sarah: I learned how to code and I'm proud of the progress we made despite all the confusion. Bridget: I learned how to code for the first time and what I am proud of is that the game came out how we wanted to and work out good. 
