@@ -14,6 +14,7 @@ SCORE_LIMIT = 5
 BALL_FRICTION = 0.98
 BOUNCE_FACTOR = 1.05
 SPEED_BOOST_TIME = 2000  # milliseconds
+MAX_BALL_SPEED = 15
 
 # --- Screen Setup ---
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -23,11 +24,12 @@ clock = pygame.time.Clock()
 # --- Fonts ---
 font = pygame.font.SysFont("Arial", 36)
 button_font = pygame.font.SysFont("Arial", 48)
-emoji_font = pygame.font.SysFont("Segoe UI Emoji", 100)  # Windows fallback
 
 # --- Load Assets ---
 def load_image(name, size=(60, 60)):
-    return pygame.transform.scale(pygame.image.load(os.path.join("assets", name)), size)
+    return pygame.transform.scale(
+        pygame.image.load(os.path.join("assets", name)).convert_alpha(), size
+    )
 
 teams = {
     "blue": "player1.png",
@@ -38,7 +40,9 @@ stadiums = {
 }
 player1_img = load_image(teams["blue"])
 player2_img = load_image(teams["red"])
-background_img = pygame.transform.scale(pygame.image.load(os.path.join("assets", stadiums["grass"])), (WIDTH, HEIGHT))
+background_img = pygame.transform.scale(
+    pygame.image.load(os.path.join("assets", stadiums["grass"])).convert(), (WIDTH, HEIGHT)
+)
 
 pygame.mixer.music.load(os.path.join("assets", "music.mp3"))
 pygame.mixer.music.set_volume(0.5)
@@ -83,7 +87,9 @@ class Player(pygame.sprite.Sprite):
 class Ball(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.transform.scale(pygame.image.load(os.path.join("assets", "ball.png")).convert_alpha(), (30, 30))
+        self.image = pygame.transform.scale(
+            pygame.image.load(os.path.join("assets", "ball.png")).convert_alpha(), (30, 30)
+        )
         self.rect = self.image.get_rect(center=(WIDTH // 2, HEIGHT // 2))
         self.vel = pygame.Vector2(0, 0)
 
@@ -92,16 +98,25 @@ class Ball(pygame.sprite.Sprite):
         self.rect.y += self.vel.y
         self.vel *= BALL_FRICTION
 
-        # Bounce walls
-        if self.rect.top <= 0 or self.rect.bottom >= HEIGHT:
-            self.vel.y = -self.vel.y * BOUNCE_FACTOR
+        # Clamp speed
+        if self.vel.length() > MAX_BALL_SPEED:
+            self.vel.scale_to_length(MAX_BALL_SPEED)
 
+        # Bounce off top/bottom
+        if self.rect.top <= 0:
+            self.rect.top = 0
+            self.vel.y = abs(self.vel.y) * BOUNCE_FACTOR
+        elif self.rect.bottom >= HEIGHT:
+            self.rect.bottom = HEIGHT
+            self.vel.y = -abs(self.vel.y) * BOUNCE_FACTOR
+
+        # Bounce off sides
         if self.rect.left <= 0:
             self.rect.left = 0
-            self.vel.x = -self.vel.x * BOUNCE_FACTOR
+            self.vel.x = abs(self.vel.x) * BOUNCE_FACTOR
         elif self.rect.right >= WIDTH:
             self.rect.right = WIDTH
-            self.vel.x = -self.vel.x * BOUNCE_FACTOR
+            self.vel.x = -abs(self.vel.x) * BOUNCE_FACTOR
 
         # Goal detection
         if self.rect.left <= 0 and HEIGHT * 0.25 <= self.rect.centery <= HEIGHT * 0.75:
@@ -138,10 +153,10 @@ start_rect = start_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 100))
 # --- Main Loop ---
 running = True
 while running:
-    clock.tick(FPS)
+    dt = clock.tick(FPS)
+    pygame.event.pump()  # Helps smooth input handling
     screen.fill((0, 0, 0))
 
-    # Handle Events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -182,19 +197,14 @@ while running:
     # --- GAME OVER ---
     if game_state == "gameover":
         screen.fill((255, 224, 192))
-
-        # Message only (no smiley)
         msg = font.render("Thanks for playing!", True, (80, 40, 0))
         screen.blit(msg, msg.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 40)))
 
-
-        # Quit button
         quit_text = button_font.render("Quit", True, (255, 255, 255))
         quit_rect = quit_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 100))
         pygame.draw.rect(screen, (200, 80, 80), quit_rect.inflate(30, 20))
         screen.blit(quit_text, quit_rect)
 
-        # Replay button
         replay_text = button_font.render("Play Again", True, (255, 255, 255))
         replay_rect = replay_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 170))
         pygame.draw.rect(screen, (100, 150, 200), replay_rect.inflate(30, 20))
@@ -235,11 +245,9 @@ while running:
         if pygame.sprite.collide_rect(player1, player2):
             overlap = pygame.Vector2(player2.rect.center) - pygame.Vector2(player1.rect.center)
             if overlap.length() > 0:
-                overlap = overlap.normalize()
-                player1.rect.x -= int(overlap.x)
-                player1.rect.y -= int(overlap.y)
-                player2.rect.x += int(overlap.x)
-                player2.rect.y += int(overlap.y)
+                push = overlap.normalize() * 2
+                player1.rect.move_ip(-push.x, -push.y)
+                player2.rect.move_ip(push.x, push.y)
 
         for player in [player1, player2]:
             if pygame.sprite.collide_rect(ball, player):
@@ -253,6 +261,11 @@ while running:
     ball_group.draw(screen)
     score_text = font.render(f"Blue: {score['player1']}   Red: {score['player2']}", True, (255, 255, 255))
     screen.blit(score_text, (WIDTH // 2 - 150, 20))
+
+    # FPS Display (top-left corner)
+    fps = int(clock.get_fps())
+    fps_text = font.render(f"FPS: {fps}", True, (200, 200, 200))
+    screen.blit(fps_text, (10, 10))
 
     pygame.display.flip()
 
